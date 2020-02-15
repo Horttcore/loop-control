@@ -27,6 +27,21 @@ class LoopControl extends Component {
         const { setAttributes, postTaxonomies, postType, query, posts } = this.props;
         const taxonomySelects = [];
 
+        postTaxonomies.map((taxonomy, tax) => {
+            if (!taxonomy.terms)
+                taxonomy.terms = [];
+            taxonomySelects.push(<PanelBody title={taxonomy.name}>
+                <FormTokenField
+                    value={query[taxonomy.slug]}
+                    suggestions={taxonomy.terms.map(term => term.name)}
+                    onChange={terms => {
+                        query[taxonomy.slug] = terms
+                        setAttributes({ query });
+                    }}
+                />
+            </PanelBody>)
+        })
+
         return (
             <Fragment>
 
@@ -51,21 +66,7 @@ class LoopControl extends Component {
                             />
                         </PanelBody>
                     }
-
-                    {postTaxonomies.map((taxonomy, tax) => {
-                        if (!taxonomy.terms)
-                            return;
-                        taxonomySelects.push(<PanelBody title={taxonomy.name}>
-                            <FormTokenField
-                                value={query[taxonomy.slug]}
-                                suggestions={taxonomy.terms.map(term => term.name)}
-                                onChange={terms => {
-                                    query[taxonomy.slug] = terms
-                                    setAttributes({ query });
-                                }}
-                            />
-                        </PanelBody>)
-                    })}
+                    {taxonomySelects}
 
                     <PanelBody title={__('Order')}>
                         <SelectControl
