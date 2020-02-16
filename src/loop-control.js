@@ -119,7 +119,7 @@ class LoopControl extends Component {
 export default withSelect((select, props) => {
     const { getEntityRecords, getPostType, getTaxonomy } = select('core');
     const postType = getPostType(props.postType);
-    const posts = getEntityRecords('postType', props.postType, { per_page: 100, orderBy: 'title', order: 'asc' })
+    const posts = getEntityRecords('postType', props.postType, { per_page: 100, orderby: 'title', order: 'asc' })
     const postTaxonomies = [];
 
     if (postType && postType.taxonomies) {
