@@ -1,31 +1,47 @@
-const { __ } = wp.i18n;
-const {
-    Component,
-    Fragment
-} = wp.element;
+const apiFetch = wp.apiFetch;
 
+const { __ } = wp.i18n;
+
+/**
+ * WordPress dependencies
+ */
+const { Component, Fragment } = wp.element;
 const {
     PanelBody,
     RangeControl,
     SelectControl,
     FormTokenField,
+    TextControl,
+    IconButton
 } = wp.components;
-
 const {
     InspectorControls,
 } = wp.blockEditor;
-
 const { withSelect } = wp.data;
 
-class LoopControl extends Component {
+class LoopComponent extends Component {
 
     constructor() {
         super(...arguments);
+        this.state = {
+            searchValue: '',
+            searchResult: [],
+        }
     }
 
     render() {
-        const { setAttributes, postTaxonomies, postType, query, posts } = this.props;
+        const {
+            attributes: {
+                query
+            },
+            setAttributes,
+            postTaxonomies,
+            postType,
+            posts
+        } = this.props;
         const taxonomySelects = [];
+        const searchResult = [];
+        const selectedPosts = [];
 
         postTaxonomies.map((taxonomy, tax) => {
             if (!taxonomy.terms)
@@ -42,37 +58,30 @@ class LoopControl extends Component {
             </PanelBody>)
         })
 
+        this.state.searchResult.map(result => {
+            searchResult.push(
+                <><IconButton onClick={() => { this.addResult(result) }} icon="plus-alt">{result.title}</IconButton> <br /></>
+            );
+        });
+
+        if (posts) {
+            posts.map(post => {
+                selectedPosts.push(
+                    <><IconButton onClick={() => { this.removeResult(post) }} icon="dismiss">{post.title.rendered}</IconButton> <br /></>
+                );
+            });
+        }
+
         return (
             <Fragment>
 
                 <InspectorControls>
-
-                    {postType &&
-                        <PanelBody title={postType.name}>
-                            <SelectControl
-                                multiple
-                                label={__('Select')}
-                                value={query['post__in']}
-                                onChange={(postIn) => {
-                                    query['post__in'] = postIn;
-                                    setAttributes({ query });
-                                }}
-                                options={posts.map((post) => {
-                                    return {
-                                        value: post.id,
-                                        label: post.title.rendered
-                                    }
-                                })}
-                            />
-                        </PanelBody>
-                    }
                     {taxonomySelects}
-
                     <PanelBody title={__('Order')}>
                         <SelectControl
-                            value={query['orderBy'] ? query['orderBy'] : ''}
+                            value={query.orderBy ? query.orderBy : ''}
                             onChange={(orderBy) => {
-                                query['orderBy'] = orderBy;
+                                query.orderBy = orderBy;
                                 setAttributes({ query })
                             }}
                             options={[
@@ -98,10 +107,10 @@ class LoopControl extends Component {
 
                     <PanelBody title={__('Number of items')}>
                         <RangeControl
-                            value={query['showPosts'] ? query['showPosts'] : 10}
+                            value={query.showPosts ? query.showPosts : 10}
                             onChange={(showPosts) => {
-                                query['showPosts'] = showPosts;
-                                setAttributes({ query })
+                                query.showPosts = showPosts;
+                                setAttributes({ query: query })
                             }}
                             min={1}
                             max={100}
@@ -109,18 +118,64 @@ class LoopControl extends Component {
                         />
                     </PanelBody>
 
+                    {postType &&
+                        <PanelBody title={postType.name}>
+                            {selectedPosts}
+                            <TextControl
+                                label={__('Search')}
+                                value={this.state.searchValue}
+                                onChange={(searchValue) => {
+                                    this.setState({ searchValue });
+                                    this.searchPost();
+                                }}
+                                type="search"
+                            />
+                            <ul>
+                                {searchResult}
+                            </ul>
+                        </PanelBody>
+                    }
+
                 </InspectorControls>
 
             </Fragment>
         );
+    }
+
+    searchPost() {
+        apiFetch({
+            path: '/wp/v2/search?type=post&subtype=staff&search=' + this.state.searchValue
+        }).then(res => {
+            this.state.searchResult = res;
+        });
+    }
+
+    addResult(result) {
+        const {
+            attributes: {
+                query
+            },
+            setAttributes
+        } = this.props;
+
+        if (!query.postIn) {
+            query.postIn = [];
+        }
+        query.postIn.push(result.id)
+        this.setState({
+            searchValue: '',
+            searchResult: []
+        });
+        setAttributes(query);
     }
 }
 
 export default withSelect((select, props) => {
     const { getEntityRecords, getPostType, getTaxonomy } = select('core');
     const postType = getPostType(props.postType);
-    const posts = getEntityRecords('postType', props.postType, { per_page: 100, orderby: 'title', order: 'asc' })
     const postTaxonomies = [];
+    let posts = [];
+    let searchResult = [];
 
     if (postType && postType.taxonomies) {
         postType.taxonomies.map(tax => {
@@ -132,9 +187,14 @@ export default withSelect((select, props) => {
         });
     }
 
+    if (props.query.postIn) {
+        posts = getEntityRecords('postType', props.postType, { per_page: 100, orderby: 'include', include: props.query.postIn });
+    }
+
     return {
         postType,
         posts,
-        postTaxonomies
+        postTaxonomies,
+        searchResult
     };
 })(LoopComponent);
