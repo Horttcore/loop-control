@@ -1,41 +1,69 @@
-const apiFetch = wp.apiFetch;
 const { __ } = wp.i18n;
 
 /**
  * WordPress dependencies
  */
-const { Component, Fragment } = wp.element;
+const {
+    Component,
+    Fragment
+} = wp.element;
 const {
     PanelBody,
     RangeControl,
     SelectControl,
     FormTokenField,
-    TextControl,
-    IconButton
 } = wp.components;
 const { InspectorControls } = wp.blockEditor;
 const { withSelect } = wp.data;
 
 class LoopComponent extends Component {
+
     constructor() {
         super(...arguments);
         this.state = {
-            searchValue: "",
-            searchResult: []
+            query: {}
         };
+    }
+
+    update(key, value) {
+        const state = this.state.query;
+        state[key] = value;
+        this.setState({ query: state })
+        this.props.setAttributes({ query: state })
+        this.forceUpdate();
     }
 
     render() {
         const {
             query,
-            setAttributes,
             postTaxonomies,
             postType,
-            posts
+            posts,
+            orderBy,
+            showPostsMax,
+            offsetMax,
         } = this.props;
         const taxonomySelects = [];
-        const searchResult = [];
-        const selectedPosts = [];
+        const orderByValue = (orderBy) ? orderBy : [
+            {
+                value: "title/asc",
+                label: __("A → Z")
+            },
+            {
+                value: "date/desc",
+                label: __("Newest to Oldest")
+            },
+            {
+                value: "date/asc",
+                label: __("Oldest to Newest")
+            },
+            {
+                value: "menu_order/asc",
+                label: __("Menu order")
+            },
+        ];
+        const showPostsValue = (showPostsMax) ? showPostsMax : 100;
+        const offsetMaxValue = (offsetMax) ? offsetMax : 100;
 
         if (postTaxonomies) {
             postTaxonomies.map((taxonomy, index) => {
@@ -49,8 +77,7 @@ class LoopComponent extends Component {
                             value={query[taxonomy.slug]}
                             suggestions={taxonomy.terms.map(term => term.name)}
                             onChange={terms => {
-                                query[taxonomy.slug] = terms;
-                                setAttributes({ query });
+                                this.update(taxonomy.slug, terms);
                             }}
                         />
                     </PanelBody>
@@ -58,45 +85,21 @@ class LoopComponent extends Component {
             });
         }
 
-        if (posts) {
-            posts.map((post, index) => {
-                selectedPosts.push(
-                    <>
-                        <IconButton
-                            key={`remove-item-${index}`}
-                            onClick={() => {
-                                this.removePost(post);
-                            }}
-                            icon="dismiss"
-                        >
-                            {post.title.rendered}
-                        </IconButton>
-                        <br />
-                    </>
-                );
+        let postsFieldValue = [];
+        let postNames = [];
+        if (posts !== null) {
+            let selectedPosts = query.postIn ? query.postIn : [];
+            postNames = posts.map((post) => post.title.raw);
+            postsFieldValue = selectedPosts.map((postId) => {
+                let wantedPost = posts.find((post) => {
+                    return post.id === postId;
+                });
+                if (wantedPost === undefined || !wantedPost) {
+                    return false;
+                }
+                return wantedPost.title.raw;
             });
-
-            if (posts.length > 0) {
-                selectedPosts.push(<hr />)
-            }
         }
-
-        this.state.searchResult.map((post, index) => {
-            searchResult.push(
-                <>
-                    <IconButton
-                        key={`add-item-${index}`}
-                        onClick={() => {
-                            this.addPost(post);
-                        }}
-                        icon="plus-alt"
-                    >
-                        {post.title}
-                    </IconButton>
-                    <br />
-                </>
-            );
-        });
 
         return (
             <Fragment>
@@ -106,27 +109,9 @@ class LoopComponent extends Component {
                         <SelectControl
                             value={query.orderBy ? query.orderBy : ""}
                             onChange={orderBy => {
-                                query.orderBy = orderBy;
-                                setAttributes({ query });
+                                this.update('orderBy', orderBy);
                             }}
-                            options={[
-                                {
-                                    value: "title",
-                                    label: __("A → Z")
-                                },
-                                {
-                                    value: "menu_order",
-                                    label: __("Menu order")
-                                },
-                                {
-                                    value: "date desc",
-                                    label: __("Newest to Oldest")
-                                },
-                                {
-                                    value: "date asc",
-                                    label: __("Oldest to Newest")
-                                }
-                            ]}
+                            options={orderByValue}
                         />
                     </PanelBody>
 
@@ -134,11 +119,10 @@ class LoopComponent extends Component {
                         <RangeControl
                             value={query.showPosts ? query.showPosts : 10}
                             onChange={showPosts => {
-                                query.showPosts = showPosts;
-                                setAttributes({ query: query });
+                                this.update('showPosts', showPosts);
                             }}
                             min={1}
-                            max={100}
+                            max={showPostsValue}
                             required
                         />
                     </PanelBody>
@@ -147,71 +131,43 @@ class LoopComponent extends Component {
                         <RangeControl
                             value={query.offset ? query.offset : 0}
                             onChange={offset => {
-                                query.offset = offset;
-                                setAttributes({ query: query });
+                                this.update('offset', offset);
                             }}
                             min={0}
-                            max={100}
+                            max={offsetMaxValue}
                             required
                         />
                     </PanelBody>
 
-                    {postType && (
+                    {posts && (
                         <PanelBody title={postType.name}>
-                            {selectedPosts}
-                            <TextControl
-                                label={__("Search")}
-                                value={this.state.searchValue}
-                                onChange={searchValue => {
-                                    this.setState({ searchValue });
-                                    this.searchPost();
+                            <FormTokenField
+                                label=""
+                                value={postsFieldValue}
+                                suggestions={postNames}
+                                maxSuggestions={20}
+                                onChange={(selectedPosts) => {
+                                    let selectedPostsArray = [];
+                                    selectedPosts.map(
+                                        (postName) => {
+                                            const matchingPost = posts.find((post) => {
+                                                return post.title.raw === postName;
+
+                                            });
+                                            if (matchingPost !== undefined) {
+                                                selectedPostsArray.push(matchingPost.id);
+                                            }
+                                        }
+                                    )
+                                    query.postIn = selectedPostsArray;
+                                    this.update('postIn', selectedPostsArray);
                                 }}
-                                type="search"
                             />
-                            <ul>{searchResult}</ul>
                         </PanelBody>
                     )}
                 </InspectorControls>
             </Fragment>
         );
-    }
-
-    searchPost() {
-        apiFetch({
-            path:
-                "/wp/v2/search?type=post&subtype=staff&search=" + this.state.searchValue
-        }).then(res => {
-            this.state.searchResult = res;
-        });
-    }
-
-    addPost(post) {
-        const {
-            attributes: { query },
-            setAttributes
-        } = this.props;
-
-        if (!query.postIn) {
-            query.postIn = [];
-        }
-
-        query.postIn.push(post.id);
-        this.setState({
-            searchValue: "",
-            searchResult: []
-        });
-        setAttributes({ query });
-    }
-
-    removePost(post) {
-        const {
-            attributes: { query },
-            setAttributes
-        } = this.props;
-
-        query.postIn.splice(query.postIn.indexOf(post.id), 1);
-
-        setAttributes({ query });
     }
 }
 
@@ -232,13 +188,9 @@ export default withSelect((select, props) => {
         });
     }
 
-    if (props.query.postIn) {
-        posts = getEntityRecords("postType", props.postType, {
-            per_page: 100,
-            orderby: "include",
-            include: props.query.postIn
-        });
-    }
+    posts = getEntityRecords("postType", props.postType, {
+        per_page: 100,
+    });
 
     return {
         postType,
