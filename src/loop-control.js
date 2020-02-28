@@ -35,7 +35,9 @@ class LoopComponent extends Component {
 
     render() {
         const {
-            query,
+            attributes: {
+                query
+            },
             postTaxonomies,
             postType,
             posts,
@@ -67,6 +69,14 @@ class LoopComponent extends Component {
 
         if (postTaxonomies) {
             postTaxonomies.map((taxonomy, index) => {
+                let termsFieldValue = [];
+                if (taxonomy.terms !== null) {
+                    let selectedTerms = query[taxonomy.slug] ? query[taxonomy.slug] : [];
+                    termsFieldValue = selectedTerms.map((termId) => {
+                        let wantedTerm = taxonomy.terms.find((term) => term.id === termId);
+                        return (wantedTerm === undefined || !wantedTerm) ? false : wantedTerm.name;
+                    });
+                }
                 if (!taxonomy.terms) taxonomy.terms = [];
                 taxonomySelects.push(
                     <PanelBody
@@ -74,10 +84,22 @@ class LoopComponent extends Component {
                         title={taxonomy.name}
                     >
                         <FormTokenField
-                            value={query[taxonomy.slug]}
+                            value={termsFieldValue}
                             suggestions={taxonomy.terms.map(term => term.name)}
-                            onChange={terms => {
-                                this.update(taxonomy.slug, terms);
+                            onChange={(selectedTerms) => {
+                                let selectedTermsArray = [];
+                                selectedTerms.map(
+                                    (termName) => {
+                                        const matchingTerm = taxonomy.terms.find((term) => {
+                                            return term.name === termName;
+
+                                        });
+                                        if (matchingTerm !== undefined) {
+                                            selectedTermsArray.push(matchingTerm.id);
+                                        }
+                                    }
+                                )
+                                this.update(taxonomy.slug, selectedTermsArray);
                             }}
                         />
                     </PanelBody>
@@ -89,15 +111,9 @@ class LoopComponent extends Component {
         let postNames = [];
         if (posts !== null) {
             let selectedPosts = query.postIn ? query.postIn : [];
-            postNames = posts.map((post) => post.title.raw);
             postsFieldValue = selectedPosts.map((postId) => {
-                let wantedPost = posts.find((post) => {
-                    return post.id === postId;
-                });
-                if (wantedPost === undefined || !wantedPost) {
-                    return false;
-                }
-                return wantedPost.title.raw;
+                let wantedPost = posts.find((post) => post.id === postId);
+                return (wantedPost === undefined || !wantedPost) ? false : wantedPost.title.raw;
             });
         }
 
@@ -159,7 +175,6 @@ class LoopComponent extends Component {
                                             }
                                         }
                                     )
-                                    query.postIn = selectedPostsArray;
                                     this.update('postIn', selectedPostsArray);
                                 }}
                             />
