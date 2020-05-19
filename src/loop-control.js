@@ -1,8 +1,4 @@
 const { __ } = wp.i18n;
-
-/**
- * WordPress dependencies
- */
 const {
     Component,
     Fragment
@@ -20,33 +16,29 @@ class LoopComponent extends Component {
 
     constructor() {
         super(...arguments);
-        this.state = {
-            query: {}
-        };
-    }
-
-    update(key, value) {
-        const state = this.state.query;
-        state[key] = value;
-        this.setState({ query: state })
-        this.props.setAttributes({ query: state })
-        this.forceUpdate();
     }
 
     render() {
+
         const {
-            attributes: {
-                query
-            },
+            setAttributes,
+            order,
+            orderBy,
+            numberOfItems,
+            orderByValues,
+            offset,
+            postIn,
             postTaxonomies,
             postType,
             posts,
-            orderBy,
             showPostsMax,
             offsetMax,
         } = this.props;
+
         const taxonomySelects = [];
-        const orderByValue = (orderBy) ? orderBy : [
+
+        const orderByValue = [orderBy, order].join('/');
+        const orderBySelectValues = (orderByValues) ? orderByValues : [
             {
                 value: "title/asc",
                 label: __("A → Z")
@@ -64,14 +56,23 @@ class LoopComponent extends Component {
                 label: __("Menu order")
             },
         ];
-        const showPostsValue = (showPostsMax) ? showPostsMax : 100;
+
+        const showPostsMaxValue = (showPostsMax) ? showPostsMax : 100;
+
         const offsetMaxValue = (offsetMax) ? offsetMax : 100;
+
+        const snakeToCamel = (str) => str.replace(
+            /([-_][a-z])/g,
+            (group) => group.toUpperCase()
+                .replace('-', '')
+                .replace('_', '')
+        );
 
         if (postTaxonomies) {
             postTaxonomies.map((taxonomy, index) => {
                 let termsFieldValue = [];
                 if (taxonomy.terms !== null) {
-                    let selectedTerms = query[taxonomy.slug] ? query[taxonomy.slug] : [];
+                    let selectedTerms = this.props[snakeToCamel(taxonomy.slug)];
                     termsFieldValue = selectedTerms.map((termId) => {
                         let wantedTerm = taxonomy.terms.find((term) => term.id === termId);
                         return (wantedTerm === undefined || !wantedTerm) ? false : wantedTerm.name;
@@ -99,7 +100,11 @@ class LoopComponent extends Component {
                                         }
                                     }
                                 )
-                                this.update(taxonomy.slug, selectedTermsArray);
+                                let attr = [];
+                                attr[snakeToCamel(taxonomy.slug)] = selectedTermsArray;
+                                attr = { ...attr }
+                                console.log(attr)
+                                setAttributes(attr)
                             }}
                         />
                     </PanelBody>
@@ -110,45 +115,44 @@ class LoopComponent extends Component {
         let postsFieldValue = [];
         let postNames = [];
         if (posts !== null) {
-            let selectedPosts = query.postIn ? query.postIn : [];
-            postsFieldValue = selectedPosts.map((postId) => {
+            postsFieldValue = postIn.map((postId) => {
                 let wantedPost = posts.find((post) => post.id === postId);
                 return (wantedPost === undefined || !wantedPost) ? false : wantedPost.title.raw;
             });
         }
-
         return (
             <Fragment>
                 <InspectorControls>
                     {taxonomySelects}
+
                     <PanelBody title={__("Order")}>
                         <SelectControl
-                            value={query.orderBy ? query.orderBy : ""}
-                            onChange={orderBy => {
-                                this.update('orderBy', orderBy);
+                            value={orderByValue}
+                            onChange={orderByValue => {
+                                orderByValue = orderByValue.split('/');
+                                setAttributes({
+                                    orderBy: orderByValue[0],
+                                    order: orderByValue[1],
+                                })
                             }}
-                            options={orderByValue}
+                            options={orderBySelectValues}
                         />
                     </PanelBody>
 
                     <PanelBody title={__("Number of items")}>
                         <RangeControl
-                            value={query.showPosts ? query.showPosts : 10}
-                            onChange={showPosts => {
-                                this.update('showPosts', showPosts);
-                            }}
+                            value={numberOfItems}
+                            onChange={numberOfItems => { setAttributes({ numberOfItems }) }}
                             min={1}
-                            max={showPostsValue}
+                            max={showPostsMaxValue}
                             required
                         />
                     </PanelBody>
 
                     <PanelBody title={__("Offset")}>
                         <RangeControl
-                            value={query.offset ? query.offset : 0}
-                            onChange={offset => {
-                                this.update('offset', offset);
-                            }}
+                            value={offset}
+                            onChange={offset => { setAttributes({ offset }) }}
                             min={0}
                             max={offsetMaxValue}
                             required
@@ -175,7 +179,7 @@ class LoopComponent extends Component {
                                             }
                                         }
                                     )
-                                    this.update('postIn', selectedPostsArray);
+                                    setAttributes({ postIn: selectedPostsArray });
                                 }}
                             />
                         </PanelBody>
@@ -184,6 +188,7 @@ class LoopComponent extends Component {
             </Fragment>
         );
     }
+
 }
 
 export default withSelect((select, props) => {
