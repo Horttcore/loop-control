@@ -114,10 +114,14 @@ class LoopComponent extends Component {
         let postsFieldValue = [];
         let postNames = [];
         if (posts !== null) {
+            posts.map(post => {
+                postNames.push(post.title.raw);
+            })
             postsFieldValue = postIn.map((postId) => {
                 let wantedPost = posts.find((post) => post.id === postId);
                 return (wantedPost === undefined || !wantedPost) ? false : wantedPost.title.raw;
             });
+            console.log(postNames);
         }
         return (
             <Fragment>
@@ -195,7 +199,6 @@ export default withSelect((select, props) => {
     const postType = getPostType(props.postType);
     const postTaxonomies = [];
     let posts = [];
-    let searchResult = [];
 
     if (postType && postType.taxonomies) {
         postType.taxonomies.map(tax => {
@@ -215,6 +218,5 @@ export default withSelect((select, props) => {
         postType,
         posts,
         postTaxonomies,
-        searchResult
     };
 })(LoopComponent);
