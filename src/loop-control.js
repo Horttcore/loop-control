@@ -103,7 +103,6 @@ class LoopComponent extends Component {
                                 let attr = [];
                                 attr[snakeToCamel(taxonomy.slug)] = selectedTermsArray;
                                 attr = { ...attr }
-                                console.log(attr)
                                 setAttributes(attr)
                             }}
                         />
