@@ -20,15 +20,21 @@ export default class Edit extends Component {
     render() {
         const {
             attributes: {
-                query
-            }
+                category,
+                orderBy,
+                order,
+                numberOfItems,
+                offset,
+                postIn,
+            },
+            setAttributes,
         } = this.props;
         return (
             <Fragment>
                 <LoopComponent
                     postType="post"
-                    query={query}
-                    {...{ ...this.props }}
+                    {...this.props.attributes}
+                    setAttributes={setAttributes}
                 />
                 …
             </Fragment>
