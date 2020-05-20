@@ -1,5 +1,5 @@
 {
-  "name": "loop-control",
+  "name": "@horttcore/loop-control",
   "version": "1.0.0",
   "description": "A Gutenberg Loop Component",
   "main": "src/loop-control.js",
