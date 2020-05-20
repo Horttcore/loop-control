@@ -7,7 +7,7 @@ A WordPress Gutenberg loop component
 
 Add it to your custom block
 ```js
-import LoopComponent from '@ralfhortt/loop-control';
+import LoopComponent from '@horttcore/loop-control';
 
 const { Component, Fragment } = wp.element;
 
