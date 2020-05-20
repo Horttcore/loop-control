@@ -3,8 +3,6 @@ A WordPress Gutenberg loop component
 
 ## Usage
 
-* Your block **MUST HAVE** a attribute called `query`
-
 Add it to your custom block
 ```js
 import LoopComponent from '@horttcore/loop-control';
