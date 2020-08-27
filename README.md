@@ -3,9 +3,60 @@ A WordPress Gutenberg loop component
 
 ## Usage
 
-Add it to your custom block
 ```js
-import LoopComponent from '@horttcore/loop-control';
+<LoopControl
+    postType="post"
+    {...this.props.attributes}
+/>
+```
+
+## Attributes
+
+### Default attributes
+
+Add these attributes to your block
+
+```js
+orderBy: {
+    type: 'string',
+    default: 'title'
+},
+order: {
+    type: 'string',
+    default: 'asc'
+},
+numberOfItems: {
+    type: 'number',
+    default: 10,
+},
+offset: {
+    type: 'number',
+    default: 0
+},
+postIn: {
+    type: 'array',
+    default: [],
+},
+```
+
+### Taxonomies
+
+Add taxonomies attributes
+
+```js
+division: {
+    type: 'array',
+    default: [],
+}
+```
+
+
+## Block
+
+Add it to your custom block
+
+```js
+import LoopControl from './loop-control';
 
 const { Component, Fragment } = wp.element;
 
@@ -18,7 +69,7 @@ export default class Edit extends Component {
     render() {
         const {
             attributes: {
-                category,
+                division,
                 orderBy,
                 order,
                 numberOfItems,
@@ -29,10 +80,9 @@ export default class Edit extends Component {
         } = this.props;
         return (
             <Fragment>
-                <LoopComponent
+                <LoopControl
                     postType="post"
                     {...this.props.attributes}
-                    setAttributes={setAttributes}
                 />
                 …
             </Fragment>
