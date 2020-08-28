@@ -3,90 +3,165 @@ A WordPress Gutenberg loop component
 
 ## Usage
 
+### Add the loop control attributes to your block
+
 ```js
-<LoopControl
-    postType="post"
-    {...this.props.attributes}
-/>
+export default {
+    postLayout: {
+        type: 'string',
+        default: 'list',
+    },
+    gridColumns: {
+        type: 'integer',
+        default: -1,
+    },
+    orderBy: {
+        type: 'string',
+        default: 'title'
+    },
+    order: {
+        type: 'string',
+        default: 'asc'
+    },
+    numberOfItems: {
+        type: 'number',
+        default: 10,
+    },
+    offset: {
+        type: 'number',
+        default: 0
+    },
+    postIn: {
+        type: 'array',
+        default: [],
+    }
+}
+
 ```
 
-## Attributes
+```php
+<?php
+register_block_type(
+    'block-slug',
+    [
+        'render_callback' => 'callback_function',
+        'attributes'      => [
+            'postLayout' => [
+                'type' => 'string',
+                'default' => 'list',
+            ],
+            'gridColumns' => [
+                'type'=> 'integer',
+                'default'=> -1,
+            ],
+            'orderBy' => [
+                'type' => 'string',
+                'default' => 'title',
+            ],
+            'order' => [
+                'type' => 'string',
+                'default' => 'asc',
+            ],
+            'numberOfItems' => [
+                'type' => 'integer',
+                'default' => 10,
+            ],
+            'offset' => [
+                'type' => 'integer',
+                'default' => 0,
+            ],
+            'postIn' => [
+                'type' => 'array',
+                'default' => [],
+            ],
+        ],
+    ]
+);
 
-### Default attributes
+```
 
-Add these attributes to your block
+### Import loop-control.js
 
 ```js
-orderBy: {
-    type: 'string',
-    default: 'title'
-},
-order: {
-    type: 'string',
-    default: 'asc'
-},
-numberOfItems: {
-    type: 'number',
-    default: 10,
-},
-offset: {
-    type: 'number',
-    default: 0
-},
-postIn: {
-    type: 'array',
-    default: [],
-},
+import LoopControl from './loop-control';
 ```
 
 ### Taxonomies
 
-Add taxonomies attributes
+For taxonomy support add camelCase attributes with taxonomy slug
 
 ```js
-division: {
-    type: 'array',
-    default: [],
-}
+    …
+    myTaxonomy: {
+        type: 'array',
+        default: [],
+    }
+    …
 ```
 
+```php
+<?php
+register_block_type(
+    'block-slug',
+    [
+        'render_callback' => 'callback_function',
+        'attributes'      => [
+            // …
+            'my-taxonomy' => [
+                'type'=> 'array',
+                'default'=> [],
+            ],
+            // …
+        ],
+    ]
+);
 
-## Block
+```
 
-Add it to your custom block
+### Edit your block
+
+- Add the loop control to you custom block
+- Set `postType` attribute
+- Set `setAttributes` attribute
 
 ```js
-import LoopControl from './loop-control';
+<LoopControl
+    postType="post-type-slug"
+    {...this.props.attributes}
+    setAttributes={setAttributes}
+/>
+```
 
-const { Component, Fragment } = wp.element;
+## Customization
 
-export default class Edit extends Component {
+### Custom values
 
-    constructor() {
-        super(...arguments);
-    }
+```js
+<LoopControl
+    postType="post-type-slug"
+    {...this.props.attributes}
+    setAttributes={setAttributes}
+    orderByValues={[
+        {
+            value: "title/asc",
+            label: __("A → Z")
+        },
+        {
+            value: "title/desc",
+            label: __("Z → A")
+        },
+   ]}
+   offsetMax=10
+   
+/>
+```
 
-    render() {
-        const {
-            attributes: {
-                division,
-                orderBy,
-                order,
-                numberOfItems,
-                offset,
-                postIn,
-            },
-            setAttributes,
-        } = this.props;
-        return (
-            <Fragment>
-                <LoopControl
-                    postType="post"
-                    {...this.props.attributes}
-                />
-                …
-            </Fragment>
-        );
-    }
-}
+### Disable features
+```js
+<LoopControl
+    postType="post-type-slug"
+    {...this.props.attributes}
+    setAttributes={setAttributes}
+    useGrid={false}
+/>
 ```
