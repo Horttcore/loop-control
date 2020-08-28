@@ -8,11 +8,12 @@ const {
     RangeControl,
     SelectControl,
     FormTokenField,
+    Toolbar,
 } = wp.components;
-const { InspectorControls } = wp.blockEditor;
+const { InspectorControls, BlockControls } = wp.blockEditor;
 const { withSelect } = wp.data;
 
-class LoopComponent extends Component {
+class LoopControl extends Component {
 
     constructor() {
         super(...arguments);
@@ -33,10 +34,31 @@ class LoopComponent extends Component {
             posts,
             showPostsMax,
             offsetMax,
+            postLayout,
+            gridColumns,
+            gridColumnsMax,
+            useGrid
         } = this.props;
 
-        const taxonomySelects = [];
+        const supportsGrid = (useGrid != false) ? true : false;
+        const gridColumnsMaxValue = (gridColumnsMax) ? gridColumnsMax : 12;
 
+        const layoutControls = [
+            {
+                icon: 'list-view',
+                title: __('List View'),
+                onClick: () => setAttributes({ postLayout: 'list', gridColumns: -1 }),
+                isActive: postLayout === 'list',
+            },
+            {
+                icon: 'grid-view',
+                title: __('Grid View'),
+                onClick: () => setAttributes({ postLayout: 'grid', gridColumns: 4 }),
+                isActive: postLayout === 'grid',
+            },
+        ];
+
+        const taxonomySelects = [];
         const orderByValue = [orderBy, order].join('/');
         const orderBySelectValues = (orderByValues) ? orderByValues : [
             {
@@ -72,7 +94,7 @@ class LoopComponent extends Component {
             postTaxonomies.map((taxonomy, index) => {
                 let termsFieldValue = [];
                 if (taxonomy.terms !== null) {
-                    let selectedTerms = this.props[snakeToCamel(taxonomy.slug)];
+                    let selectedTerms = ( this.props[snakeToCamel(taxonomy.slug)] ) ? this.props[snakeToCamel(taxonomy.slug)] : [];
                     termsFieldValue = selectedTerms.map((termId) => {
                         let wantedTerm = taxonomy.terms.find((term) => term.id === termId);
                         return (wantedTerm === undefined || !wantedTerm) ? false : wantedTerm.name;
@@ -121,10 +143,14 @@ class LoopComponent extends Component {
                 let wantedPost = posts.find((post) => post.id === postId);
                 return (wantedPost === undefined || !wantedPost) ? false : wantedPost.title.raw;
             });
-            console.log(postNames);
         }
         return (
             <Fragment>
+                {supportsGrid && (
+                    <BlockControls>
+                        <Toolbar controls={layoutControls} />
+                    </BlockControls>
+                )}
                 <InspectorControls>
                     {taxonomySelects}
 
@@ -151,6 +177,17 @@ class LoopComponent extends Component {
                             required
                         />
                     </PanelBody>
+
+                    {postLayout == 'grid' && (
+                        <PanelBody title={__("Grid columns")}>
+                            <RangeControl
+                                value={gridColumns}
+                                onChange={gridColumns => { setAttributes({ gridColumns }) }}
+                                min={1}
+                                max={gridColumnsMaxValue}
+                            />
+                        </PanelBody>
+                    )}
 
                     <PanelBody title={__("Offset")}>
                         <RangeControl
@@ -219,4 +256,4 @@ export default withSelect((select, props) => {
         posts,
         postTaxonomies,
     };
-})(LoopComponent);
+})(LoopControl);

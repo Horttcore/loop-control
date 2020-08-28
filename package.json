@@ -2,8 +2,7 @@
   "name": "@horttcore/loop-control",
   "version": "1.0.0",
   "description": "A Gutenberg Loop Component",
-  "main": "src/loop-control.js",
-  "repository": "https://Horttcore@github.com/Horttcore/loop-control.git",
+  "main": "dist/loop-control.js",
   "author": "Ralf Hortt <me@horttcore.de>",
   "license": "MIT",
   "repository": {
@@ -12,5 +11,17 @@
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
+  },
+  "scripts": {
+    "dev": "NODE_ENV=development node_modules/webpack/bin/webpack.js --progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js",
+    "watch": "NODE_ENV=development node_modules/webpack/bin/webpack.js --watch --progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js",
+    "hot": "NODE_ENV=development webpack-dev-server --inline --hot --config=node_modules/laravel-mix/setup/webpack.config.js",
+    "production": "NODE_ENV=production node_modules/webpack/bin/webpack.js --progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js"
+  },
+  "dependencies": {
+    "laravel-mix": "^5.0.5"
+  },
+  "devDependencies": {
+    "@babel/preset-react": "^7.10.4"
   }
 }
