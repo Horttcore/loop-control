@@ -243,7 +243,9 @@ export default withSelect((select, props) => {
             if (taxonomy) {
                 taxonomy.terms = getEntityRecords("taxonomy", tax, { per_page: 100 });
             }
-            postTaxonomies.push(taxonomy);
+            if (!props.taxonomies || props.taxonomies.includes(tax)) {
+                postTaxonomies.push(taxonomy);
+            }
         });
     }
 
